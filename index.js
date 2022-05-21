@@ -38,6 +38,110 @@ function verifyJWT(req, res, next) {
 
 }
 
+//Connect DB------------------>
+async function run() {
+    try {
+        await client.connect();
+        console.log("db connected");
+        const serviceCollection = client.db("assignment").collection("services");
+
+        // Get All Data From serviceCollection------------->
+        app.get('/services', async (req, res) => {
+            const query = {};
+            const cursor = serviceCollection.find(query)
+            const result = await cursor.toArray()
+            res.send(result)
+        })
+
+        // Get a data by ID from serviceCollection------------->
+        app.get('/services/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { "_id": ObjectId(id) }
+            const result = await serviceCollection.findOne(query)
+            res.send(result)
+        })
+
+        // Post Data-------------->
+        app.post('/services', async (req, res) => {
+            const newData = req.body
+            const result = await serviceCollection.insertOne(newData)
+
+            res.send(result)
+        })
+
+        // Post Data and filter duplicate----------->
+        // app.post('/user', async (req, res) => {
+        //     const newData = req.body
+        //     const query = { email: newData.email, password: newData.password }
+        //     const exists = await dataCeCollection.findOne(query)
+
+        //     if (exists) {
+        //         return res.send({ success: false, user: 'alrady exists' })
+        //     }
+        //     const result = await serviceCollection.insertOne(ApData)
+
+        //     res.send({ success: true, result })
+        // })
+
+        // Delete a Data------------------>
+        app.delete('/services/:id', async (req, res) => {
+            const id = req.params.id
+            const result = await serviceCollection.deleteOne({ "_id": ObjectId(id) });
+
+            res.send(result)
+        })
+
+        // Put Data-------------------->
+        app.put('/services/:id', async (req, res) => {
+            const id = req.params.id
+            const updateProduct = req.body
+            const query = { _id: ObjectId(id) }
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    stock: updateProduct.newQuantity
+                }
+            }
+
+            const result = await collection.updateOne(query, updateDoc, options)
+            res.send(result)
+        })
+
+        //JWT
+        app.post('/register', async (req, res) => {
+            const user = req.body;
+            console.log(req.body, 'user')
+
+            const getToken = jwt.sign(user, process.env.TOKEN, {
+                expiresIn: '1d'
+            });
+
+            res.send({ getToken });
+        })
+        // get items by email 
+        app.get('/service', verifyJWT, async (req, res) => {
+            const decodedEmail = req.decoded.email
+            console.log('decodedEmail', decodedEmail);
+            const email = req.query.email;
+            console.log("email", email);
+            if (email === decodedEmail) {
+                const query = { email: email }
+                const cursor = collection.find(query)
+                const items = await cursor.toArray()
+                res.send(items)
+            }
+            else {
+                // console.log(param);
+                return res.status(403).send({ message: 'forbidden access' })
+
+            }
+        })
+    }
+    finally {
+        // await client.close()
+    }
+
+}
 
 run().catch(console.dir)
 
