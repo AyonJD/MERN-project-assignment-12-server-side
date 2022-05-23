@@ -176,7 +176,7 @@ function verifyJWT(req, res, next) {
         return res.status(401).send({ message: "Unauthorized Access" });
     }
     const token = authHeader.split(" ")[1];
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    jwt.verify(token, process.env.TOKEN, (err, decoded) => {
         if (err) {
             return res.status(403).send({ message: "Forbidden access" });
         }
@@ -268,6 +268,13 @@ const run = async () => {
             res.send(orders);
         });
 
+        //API to post order
+        app.post("/orders", async (req, res) => {
+            const order = req.body;
+            const result = await ordersCollection.insertOne(order);
+            res.send(result);
+        })
+
         //API to update a order 
         app.put("/orders/:id", async (req, res) => {
             const orderId = req.params.id;
@@ -284,12 +291,40 @@ const run = async () => {
             res.send(updatedOrder);
         });
 
+        //API to get order by email
+        app.get('/orders', verifyJWT, async (req, res) => {
+            const decodedEmail = req.decoded.email
+            const email = req.query.email
+            console.log("email", email, decodedEmail);
+            if (email === decodedEmail) {
+                const query = { email: email }
+                const cursor = ordersCollection.find(query)
+                const items = await cursor.toArray()
+                res.send(items)
+            }
+            else {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
+        })
+
         //API to get orders by user email 
-        app.get("/orders/:email", async (req, res) => {
-            const email = req.params.email;
-            const orders = await ordersCollection.find({ email }).toArray();
-            res.send(orders);
-        });
+        app.get('/order', verifyJWT, async (req, res) => {
+            const decodedEmail = req.decoded.email
+            console.log('decodedEmail', decodedEmail);
+            const email = req.query.email;
+            console.log("email", email);
+            if (email === decodedEmail) {
+                const query = { email: email }
+                const cursor = ordersCollection.find(query)
+                const items = await cursor.toArray()
+                res.send(items)
+            }
+            else {
+                // console.log(param);
+                return res.status(403).send({ message: 'forbidden access' })
+
+            }
+        })
 
         //API to get all reviews 
         app.get("/reviews", async (req, res) => {
@@ -382,6 +417,21 @@ const run = async () => {
             const blogs = await blogsCollection.find(query).toArray();
             res.send(blogs);
         });
+
+        //token
+
+        app.post('/signin', async (req, res) => {
+            const user = req.body;
+            console.log(req.body, 'user')
+
+            const getToken = jwt.sign(user, process.env.TOKEN, {
+                expiresIn: '1d'
+            });
+
+            res.send({ getToken });
+
+        })
+
     } finally {
         // client.close(); 
     }
