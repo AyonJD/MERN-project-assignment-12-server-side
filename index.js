@@ -201,7 +201,7 @@ const run = async () => {
         const ordersCollection = db.collection("ordersCollection");
         const userCollection = db.collection("userCollection");
         const reviewsCollection = db.collection("reviewsCollection");
-        const blogsCollection = db.collection("blogs");
+        const adminCollection = db.collection("adminCollection");
 
         //Verify Admin Role 
         const verifyAdmin = async (req, res, next) => {
@@ -246,9 +246,10 @@ const run = async () => {
         app.get("/admin/:email", async (req, res) => {
             const email = req.params.email;
             const user = await userCollection.findOne({ email: email });
-            const isAdmin = user.role === "admin";
+            const isAdmin = user?.role === "admin";
             res.send({ admin: isAdmin });
         });
+
 
         //Authentication API 
         app.post("/login", async (req, res) => {
@@ -306,12 +307,33 @@ const run = async () => {
             res.send(updatedOrder);
         });
 
-        //API to delete a order
-        app.delete("/orders/:id", async (req, res) => { 
-            const orderId = req.params.id;
-            const result = await ordersCollection.deleteOne({ _id: ObjectId(orderId) });
-            res.send(result);
-        })
+        //API to delete a order ADMIN
+        app.delete("/order/:id", verifyJWT, verifyAdmin, async (req, res) => {
+            const decodedEmail = req.decoded.email;
+            const id = req.params.id;
+            const email = req.headers.email;
+            if (decodedEmail) {
+
+                const result = await ordersCollection.deleteOne({ _id: ObjectId(id) });
+                res.send(result);
+            } else {
+                res.send("Unauthorized access");
+            }
+        });
+
+        //API to delete order USER
+        app.delete("/myorder/:id", checkJwt, async (req, res) => {
+            const decodedEmail = req.decoded.email;
+            const id = req.params.id;
+            const email = req.headers.email;
+            if (decodedEmail) {
+
+                const result = await ordersCollection.deleteOne({ _id: ObjectId(id) });
+                res.send(result);
+            } else {
+                res.send("Unauthorized access");
+            }
+        });
 
         //API to get order by email
         app.get('/orders', verifyJWT, async (req, res) => {
@@ -348,7 +370,11 @@ const run = async () => {
             }
         })
 
-
+        //API to manage order
+        app.get("/orders", async (req, res) => {
+            const orders = await ordersCollection.find({}).toArray();
+            res.send(orders);
+        });
 
         //API to get all reviews 
         app.get("/reviews", async (req, res) => {
@@ -418,8 +444,14 @@ const run = async () => {
         //     }
         // });
 
+        //API to get all user
+        app.get('/user', verifyJWT, async (req, res) => {
+            const users = await userCollection.find().toArray()
+            res.send(users)
+        })
+
         //put API to update an user
-        app.put("/user/:id", verifyJWT, async (req, res) => { 
+        app.put("/user/:id", verifyJWT, async (req, res) => {
             const decodedEmail = req.decoded.email;
             const email = req.headers.email;
             if (email === decodedEmail) {
@@ -440,6 +472,7 @@ const run = async () => {
                 res.send("Unauthorized access");
             }
         })
+
 
         app.put('/tools/:id', async (req, res) => {
             const id = req.params.id
