@@ -216,6 +216,21 @@ const run = async () => {
             }
         };
 
+        //create user
+        app.put('/user/:email', async (req, res) => {
+            const email = req.params.email;
+            const user = req.body
+            const filter = { email: email }
+            const options = { upsert: true }
+            const updateDoc = {
+
+                $set: user,
+            };
+            const result = await userCollection.updateOne(filter, updateDoc, options)
+            const getToken = jwt.sign({ email: email }, process.env.TOKEN, { expiresIn: '1d' })
+            res.send({ result, getToken })
+        })
+
         //API to make Admin 
         app.put("/user/admin/:email", verifyJWT, verifyAdmin, async (req, res) => {
             const email = req.params.email;
@@ -291,6 +306,13 @@ const run = async () => {
             res.send(updatedOrder);
         });
 
+        //API to delete a order
+        app.delete("/orders/:id", async (req, res) => { 
+            const orderId = req.params.id;
+            const result = await ordersCollection.deleteOne({ _id: ObjectId(orderId) });
+            res.send(result);
+        })
+
         //API to get order by email
         app.get('/orders', verifyJWT, async (req, res) => {
             const decodedEmail = req.decoded.email
@@ -307,7 +329,7 @@ const run = async () => {
             }
         })
 
-        //API to get orders by user email 
+        //API to get orders by user email
         app.get('/order', verifyJWT, async (req, res) => {
             const decodedEmail = req.decoded.email
             console.log('decodedEmail', decodedEmail);
@@ -325,6 +347,8 @@ const run = async () => {
 
             }
         })
+
+
 
         //API to get all reviews 
         app.get("/reviews", async (req, res) => {
@@ -371,7 +395,7 @@ const run = async () => {
             }
         });
 
-        //API to update a tool 
+        //API to update a tool
         // app.put("/tools/:id", verifyJWT, async (req, res) => {
         //     const decodedEmail = req.decoded.email;
         //     const email = req.headers.email;
@@ -393,6 +417,29 @@ const run = async () => {
         //         res.send("Unauthorized access");
         //     }
         // });
+
+        //put API to update an user
+        app.put("/user/:id", verifyJWT, async (req, res) => { 
+            const decodedEmail = req.decoded.email;
+            const email = req.headers.email;
+            if (email === decodedEmail) {
+                const id = req.params.id;
+                const user = req.body;
+                const options = { upsert: true };
+                await userCollection.updateOne(
+                    { _id: ObjectId(id) },
+                    {
+                        $set: {
+                            user
+                        }
+                    },
+                    options
+                );
+                res.send(user);
+            } else {
+                res.send("Unauthorized access");
+            }
+        })
 
         app.put('/tools/:id', async (req, res) => {
             const id = req.params.id
