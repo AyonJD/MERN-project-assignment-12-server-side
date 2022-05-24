@@ -272,11 +272,19 @@ const run = async () => {
         });
 
         //API to get tools by id
-        app.get("/tools/:id", async (req, res) => {
-            const id = req.params.id;
-            const tool = await toolsCollection.findOne({ _id: ObjectId(id) });
-            res.send(tool);
-        });
+        // app.get("/tools/:id", async (req, res) => {
+        //     const id = req.params.id;
+        //     const tool = await toolsCollection.findOne({ _id: ObjectId(id) });
+        //     res.send(tool);
+        // });
+
+        //API to get tools by id
+        app.get('/tools/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: ObjectId(id) }
+            const item = await toolsCollection.findOne(query)
+            res.send(item)
+        })
 
         ////API to get all orders
         app.get("/orders", async (req, res) => {
@@ -307,6 +315,28 @@ const run = async () => {
             res.send(updatedOrder);
         });
 
+        //Update a tool
+        app.patch("/tools/:id", verifyJWT, verifyAdmin, async (req, res) => {
+            const decodedEmail = req.decoded.email;
+            const email = req.headers.email;
+            if (decodedEmail) {
+                const id = req.params.id
+                const newTools = req.body
+                //  console.log(newTools)
+                const query = { _id: ObjectId(id) }
+                const product = await toolsCollection.findOne(query)
+                //  console.log(product,'prd');
+                const options = { upsert: true };
+                const updateDoc = {
+                    $set: newTools
+                }
+                const result = await toolsCollection.updateOne(query, updateDoc, options)
+                res.send(result);
+            } else {
+                res.send("Unauthorized access");
+            }
+        });
+
         //API to delete a order ADMIN
         app.delete("/order/:id", verifyJWT, verifyAdmin, async (req, res) => {
             const decodedEmail = req.decoded.email;
@@ -322,7 +352,7 @@ const run = async () => {
         });
 
         //API to delete order USER
-        app.delete("/myorder/:id", checkJwt, async (req, res) => {
+        app.delete("/orders/:id", verifyJWT, async (req, res) => {
             const decodedEmail = req.decoded.email;
             const id = req.params.id;
             const email = req.headers.email;
@@ -408,8 +438,15 @@ const run = async () => {
             }
         });
 
+        //products add
+        app.post('/tools', verifyJWT, verifyAdmin, async (req, res) => {
+            const parts = req.body
+            const result = await toolsCollection.insertOne(parts)
+            res.send(result)
+        })
+
         //API delete a product 
-        app.delete("/product/:id", verifyJWT, async (req, res) => {
+        app.delete("/tools/:id", verifyJWT, async (req, res) => {
             const decodedEmail = req.decoded.email;
             const email = req.headers.email;
             if (email === decodedEmail) {
