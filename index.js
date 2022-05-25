@@ -338,6 +338,34 @@ const run = async () => {
             }
         });
 
+        //API to update a user
+        app.put("/user/:email", async (req, res) => {
+            const email = req.params.email;
+            const user = req.body;
+            console.log("user", user);
+            const query = {
+                email: email
+            };
+            const options = {
+                upsert: true,
+            };
+            const updatedDoc = {
+                $set: {
+                    displayName: user?.displayName,
+                    photoURL: user?.photoURL,
+                    number: user?.number,
+                    address: user?.address,
+                    institute: user?.institute
+                },
+            };
+            const result = await userCollection.updateOne(
+                query,
+                updatedDoc,
+                options
+            );
+            res.send(result);
+        });
+
         //API to delete a order ADMIN
         app.delete("/order/:id", verifyJWT, verifyAdmin, async (req, res) => {
             const decodedEmail = req.decoded.email;
@@ -370,7 +398,6 @@ const run = async () => {
         app.get('/orders/:email', verifyJWT, async (req, res) => {
             const decodedEmail = req.decoded.email
             const email = req.params.email
-            console.log("email", email, decodedEmail);
             if (email === decodedEmail) {
                 const query = { email: email }
                 const cursor = ordersCollection.find(query)
@@ -386,7 +413,7 @@ const run = async () => {
         app.get('/user/:email', verifyJWT, async (req, res) => {
             const decodedEmail = req.decoded.email;
             const email = req.params.email;
-            console.log("email", email);
+            // console.log("email", email);
             if (email === decodedEmail) {
                 const query = { email: email }
                 const cursor = userCollection.find(query)
@@ -490,8 +517,8 @@ const run = async () => {
         //put API to update an user
         app.put("/user/:id", verifyJWT, async (req, res) => {
             const decodedEmail = req.decoded.email;
-            const email = req.headers.email;
-            if (email === decodedEmail) {
+            // const email = req.headers.email;
+            if (decodedEmail) {
                 const id = req.params.id;
                 const user = req.body;
                 const options = { upsert: true };
@@ -533,7 +560,7 @@ const run = async () => {
         app.put('/tools/:id', async (req, res) => {
             const id = req.params.id
             const updateProduct = req.body
-            console.log(updateProduct);
+            // console.log(updateProduct);
             const query = { _id: ObjectId(id) }
             const options = { upsert: true };
             const updateDoc = {
@@ -558,7 +585,7 @@ const run = async () => {
 
         app.post('/signin', async (req, res) => {
             const user = req.body;
-            console.log(req.body, 'user')
+            // console.log(req.body, 'user')
 
             const getToken = jwt.sign(user, process.env.TOKEN, {
                 expiresIn: '1d'
