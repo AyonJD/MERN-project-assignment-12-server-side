@@ -220,7 +220,7 @@ const run = async () => {
         app.put('/user/:email', async (req, res) => {
             const email = req.params.email;
             const user = req.body
-            // console.log(user)
+            console.log(user?.photoURL)
             const filter = { email: email }
             const options = { upsert: true }
             const updateDoc = {
@@ -367,9 +367,9 @@ const run = async () => {
         });
 
         //API to get order by email
-        app.get('/orders', verifyJWT, async (req, res) => {
+        app.get('/orders/:email', verifyJWT, async (req, res) => {
             const decodedEmail = req.decoded.email
-            const email = req.query.email
+            const email = req.params.email
             console.log("email", email, decodedEmail);
             if (email === decodedEmail) {
                 const query = { email: email }
@@ -385,11 +385,11 @@ const run = async () => {
         //API to get user by user email
         app.get('/user/:email', verifyJWT, async (req, res) => {
             const decodedEmail = req.decoded.email;
-            const email = req.query.email;
-            // console.log("email", email);
+            const email = req.params.email;
+            console.log("email", email);
             if (email === decodedEmail) {
                 const query = { email: email }
-                const cursor = ordersCollection.find(query)
+                const cursor = userCollection.find(query)
                 const items = await cursor.toArray()
                 res.send(items)
             }
@@ -511,23 +511,23 @@ const run = async () => {
         })
 
         //API to get user by user email
-        app.get('/user', verifyJWT, async (req, res) => {
-            const decodedEmail = req.decoded.email
-            console.log('decodedEmail', decodedEmail);
-            const email = req.query.email;
-            console.log("email", email);
-            if (email === decodedEmail) {
-                const query = { email: email }
-                const cursor = userCollection.find(query)
-                const user = await cursor.toArray()
-                res.send(user)
-            }
-            else {
-                // console.log(param);
-                return res.status(403).send({ message: 'forbidden access' })
+        // app.get('/user', verifyJWT, async (req, res) => {
+        //     const decodedEmail = req.decoded.email
+        //     console.log('decodedEmail', decodedEmail);
+        //     const email = req.query.email;
+        //     console.log("email", email);
+        //     if (email === decodedEmail) {
+        //         const query = { email: email }
+        //         const cursor = userCollection.find(query)
+        //         const user = await cursor.toArray()
+        //         res.send(user)
+        //     }
+        //     else {
+        //         // console.log(param);
+        //         return res.status(403).send({ message: 'forbidden access' })
 
-            }
-        })
+        //     }
+        // })
 
 
         app.put('/tools/:id', async (req, res) => {
