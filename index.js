@@ -220,6 +220,7 @@ const run = async () => {
         app.put('/user/:email', async (req, res) => {
             const email = req.params.email;
             const user = req.body
+            // console.log(user)
             const filter = { email: email }
             const options = { upsert: true }
             const updateDoc = {
@@ -381,12 +382,11 @@ const run = async () => {
             }
         })
 
-        //API to get orders by user email
-        app.get('/order', verifyJWT, async (req, res) => {
-            const decodedEmail = req.decoded.email
-            console.log('decodedEmail', decodedEmail);
+        //API to get user by user email
+        app.get('/user/:email', verifyJWT, async (req, res) => {
+            const decodedEmail = req.decoded.email;
             const email = req.query.email;
-            console.log("email", email);
+            // console.log("email", email);
             if (email === decodedEmail) {
                 const query = { email: email }
                 const cursor = ordersCollection.find(query)
@@ -507,6 +507,25 @@ const run = async () => {
                 res.send(user);
             } else {
                 res.send("Unauthorized access");
+            }
+        })
+
+        //API to get user by user email
+        app.get('/user', verifyJWT, async (req, res) => {
+            const decodedEmail = req.decoded.email
+            console.log('decodedEmail', decodedEmail);
+            const email = req.query.email;
+            console.log("email", email);
+            if (email === decodedEmail) {
+                const query = { email: email }
+                const cursor = userCollection.find(query)
+                const user = await cursor.toArray()
+                res.send(user)
+            }
+            else {
+                // console.log(param);
+                return res.status(403).send({ message: 'forbidden access' })
+
             }
         })
 
