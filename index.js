@@ -1,10 +1,10 @@
-
-
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const jwt = require("jsonwebtoken");
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+console.log(process.env.STRIPE_SECRET_KEY);
 
 require("dotenv").config();
 
@@ -292,23 +292,36 @@ const run = async () => {
         });
 
         //API to get all reviews 
+        // app.get("/reviews", async (req, res) => {
+        //     const reviews = await reviewsCollection.find({}).toArray();
+        //     res.send(reviews);
+        // });
+
+        //API to get all reviews 
         app.get("/reviews", async (req, res) => {
             const reviews = await reviewsCollection.find({}).toArray();
             res.send(reviews);
         });
+        //API to post a review 
+        app.post('/reviews', async (req, res) => {
+            const newReview = req.body;
+            console.log(newReview);
+            const result = await reviewsCollection.insertOne(newReview);
+            res.send(result)
+        })
 
         //API to post a review 
-        app.post("/review", verifyJWT, async (req, res) => {
-            const decodedEmail = req.decoded.email;
-            const email = req.headers.email;
-            if (email === decodedEmail) {
-                const review = req.body;
-                await reviewsCollection.insertOne(review);
-                res.send(review);
-            } else {
-                res.send("Unauthorized access");
-            }
-        });
+        // app.post("/review", verifyJWT, async (req, res) => {
+        //     const decodedEmail = req.decoded.email;
+        //     const email = req.headers.email;
+        //     if (email === decodedEmail) {
+        //         const review = req.body;
+        //         await reviewsCollection.insertOne(review);
+        //         res.send(review);
+        //     } else {
+        //         res.send("Unauthorized access");
+        //     }
+        // });
 
         //API to post a product 
         app.post("/product", verifyJWT, verifyAdmin, async (req, res) => {
@@ -429,6 +442,46 @@ const run = async () => {
 
             const result = await toolsCollection.updateOne(query, updateDoc, options)
             res.send(result)
+        })
+
+        //Stripe Payment method
+        app.post('/create-payment-intent', async (req, res) => {
+            const service = req.body
+            const price = service.price
+            const amount = price * 100
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card']
+            });
+            res.send({ clientSecret: paymentIntent.client_secret })
+        })
+        app.get('/payment/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id
+            const query = { _id: ObjectId(id) }
+            const order = await ordersCollection.findOne(query)
+            res.send(order)
+        })
+
+        app.put('/ship/:id', async (req, res) => {
+
+            const id = req.params.id;
+
+            const order = req.body;
+
+            const options = { upsert: true }
+            const filter = { _id: ObjectId(id) }
+            //  console.log(filter,"filter email");
+            const updateDoc = {
+                $set: {
+                    isDeliverd: true
+                }
+
+            };
+            const result = await ordersCollection.updateOne(filter, updateDoc, options)
+
+            res.send(result)
+
         })
 
         //API to get blogs 
