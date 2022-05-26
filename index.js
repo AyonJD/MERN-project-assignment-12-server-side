@@ -3,10 +3,10 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const jwt = require("jsonwebtoken");
+require("dotenv").config();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 console.log(process.env.STRIPE_SECRET_KEY);
 
-require("dotenv").config();
 
 const port = process.env.PORT || 5000;
 const app = express();
@@ -46,6 +46,7 @@ const run = async () => {
         const userCollection = db.collection("userCollection");
         const reviewsCollection = db.collection("reviewsCollection");
         const adminCollection = db.collection("adminCollection");
+        const paymentCollection = db.collection("paymentCollection");
 
         //Verify Admin Role 
         const verifyAdmin = async (req, res, next) => {
@@ -483,6 +484,23 @@ const run = async () => {
             res.send(result)
 
         })
+
+        app.patch('/orderPay/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id
+            const payment = req.body
+            const filter = { _id: ObjectId(id) }
+            const updateDoc = {
+
+                $set: {
+                    paid: true,
+                    transactionId: payment.transactionId
+                },
+            };
+            const updateOrder = await ordersCollection.updateOne(filter, updateDoc)
+            const result = await paymentCollection.insertOne(payment)
+            res.send(updateOrder)
+        })
+
 
         //API to get blogs 
 
