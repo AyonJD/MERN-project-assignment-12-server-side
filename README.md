@@ -1,5 +1,5 @@
 server
-# SP_DECKAR
+# Hardwear Point
 
 # Back-end
 
